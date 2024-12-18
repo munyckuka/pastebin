@@ -100,20 +100,32 @@
             background-color: #45a049;
         }
         .header {
-            height: 50px;
-            width: 90%;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+
+            background-color: #343a40;
+            color: white;
+            width: 100%;
+            height: 50px;
         }
-        .header > * {
-            width: fit-content;
+        .btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
         }
+
     </style>
 </head>
 <body>
 <div class="header">
-    <a>PasteBin</a>
-    <a>Profile</a>
+    <h1>Pastebin</h1>
+    <button id="signup-btn" class="btn">Sign up</button>
 </div>
 <div class="container">
     <h1>New Paste</h1>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log In</title>
+  <link rel="stylesheet" href="login.css">
+  <style>
+    /* Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #2d2d2d;
+      color: #333;
+    }
+
+    .login-container {
+      background-color: #ffffff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 300px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: #000;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      text-align: left;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #666;
+    }
+
+    .btn {
+      background-color: #333;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      width: 100%;
+      cursor: pointer;
+      font-size: 16px;
+      text-transform: uppercase;
+    }
+
+    .btn:hover {
+      background-color: #555;
+    }
+
+  </style>
+</head>
+<body>
+<div class="login-container">
+  <form id="login-form">
+    <h2>Log in</h2>
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" placeholder="Type here..." required>
+
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" placeholder="Type here..." required>
+
+    <button type="submit" class="btn">Log In</button>
+  </form>
+</div>
+</body>
+</html>

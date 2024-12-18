@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Read Paste</title>
+  <link rel="stylesheet" href="read.css">
+  <style>
+    /* Общие стили */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    /* Body */
+    body {
+      background-color: #2d2d2d;
+      color: #ffffff;
+    }
+
+    /* Верхняя панель навигации */
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #3a3a3a;
+      padding: 10px 20px;
+      color: #ffffff;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .profile {
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    /* Контейнер пасты */
+    .paste-container {
+      background-color: #1e1e1e;
+      margin: 50px auto;
+      padding: 20px;
+      width: 60%;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .paste-title {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: #f1f1f1;
+    }
+
+    .paste-content {
+      background-color: #333333;
+      padding: 15px;
+      border-radius: 5px;
+      color: #cfcfcf;
+      font-size: 16px;
+      word-wrap: break-word;
+      min-height: 200px;
+    }
+
+  </style>
+</head>
+<body>
+<!-- Верхняя панель навигации -->
+<div class="navbar">
+  <div class="logo">Pastebin</div>
+  <div class="profile">Profile</div>
+</div>
+
+<!-- Блок для отображения пасты -->
+<div class="paste-container">
+  <h2 class="paste-title">Title</h2>
+  <div class="paste-content">
+    Content
+  </div>
+</div>
+</body>
+</html>

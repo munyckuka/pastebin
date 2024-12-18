@@ -7,6 +7,7 @@ import (
 )
 
 func main() {
+	server.ConnectToDB()
 	http.HandleFunc("/", server.MainPageHandler)
 	http.HandleFunc("/create-paste", server.CreatePasteHandler)
 	server.GetCollection("pastes")
