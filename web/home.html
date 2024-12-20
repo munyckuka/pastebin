@@ -156,11 +156,11 @@
     </div>
 
     <div class="create-button">
-        <button>Create Paste</button>
+        <button id="create_paste">Create Paste</button>
     </div>
 </div>
 <script>
-    document.querySelector('button').addEventListener('click', function () {
+    document.getElementById("create_paste").addEventListener('click', function () {
         // Получение значений полей
         const title = document.getElementById('title').value;
         const expires = document.getElementById('expires').value;
