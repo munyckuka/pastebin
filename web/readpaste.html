@@ -72,15 +72,17 @@
 <!-- Верхняя панель навигации -->
 <div class="navbar">
   <div class="logo">Pastebin</div>
-  <div class="profile">Profile</div>
+  <div class="profile" onclick="window.location.href='profile.html'">Profile</div>
 </div>
 
 <!-- Блок для отображения пасты -->
 <div class="paste-container">
-  <h2 class="paste-title">Title</h2>
+  <h2 class="paste-title">{{.Title}}</h2>
   <div class="paste-content">
-    Content
+    {{.Content}}
   </div>
+  <p>Created at: {{.CreatedAt}}</p>
+  <p>Current reads: {{.CurrentReads}}</p>
 </div>
 </body>
 </html>

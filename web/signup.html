@@ -79,7 +79,7 @@
 </head>
 <body>
 <div class="signup-container">
-  <form id="signup-form">
+  <form id="signup-form" action="/signup" method="post">
     <h2>Sign up</h2>
     <label for="login">Login:</label>
     <input type="text" id="login" name="login" placeholder="Type here..." required>
@@ -93,5 +93,14 @@
     <button type="submit" class="btn">Finish</button>
   </form>
 </div>
+<script>
+  document.getElementById("signup-form").addEventListener("submit", function (event) {
+    const password = document.getElementById("password").value;
+    if (password.length < 8) {
+      alert("Password must be at least 8 characters long.");
+      event.preventDefault(); // Останавливает отправку формы
+    }
+  });
+</script>
 </body>
 </html>
