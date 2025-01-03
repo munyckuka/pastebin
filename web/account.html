@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #2d2d2d;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .account-container {
+      background-color: #333;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      width: 300px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      text-align: left;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    button {
+      margin-top: 15px;
+      width: 100%;
+      padding: 10px;
+      background-color: #555;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #777;
+    }
+
+    .delete-btn {
+      background-color: #c0392b;
+    }
+
+    .delete-btn:hover {
+      background-color: #e74c3c;
+    }
+  </style>
+</head>
+<body>
+<div class="account-container">
+  <h2>Welcome, {{.Login}}</h2>
+  <form id="change-password-form" action="/account/change-password" method="post">
+    <label for="new-password">New Password:</label>
+    <input type="password" id="new-password" name="new-password" required>
+    <button type="submit">Change Password</button>
+  </form>
+  <form id="delete-account-form" action="/account/delete" method="post">
+    <button type="submit" class="delete-btn">Delete Account</button>
+  </form>
+</div>
+</body>
+</html>

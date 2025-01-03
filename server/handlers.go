@@ -181,7 +181,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		http.Redirect(w, r, "/users", http.StatusSeeOther)
+		http.Redirect(w, r, "/account", http.StatusSeeOther)
 	}
 }
 
@@ -218,4 +218,75 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/users", http.StatusSeeOther)
+}
+func AccountHandler(w http.ResponseWriter, r *http.Request) {
+	// Заглушка для проверки пользователя (например, сессии)
+	login := "Guest" // Здесь будет извлечение логина из сессии
+
+	// Отображаем страницу личного кабинета
+	tmpl, err := template.ParseFiles("static/account.html")
+	if err != nil {
+		http.Error(w, "Failed to load account page", http.StatusInternalServerError)
+		return
+	}
+	tmpl.Execute(w, struct{ Login string }{Login: login})
+}
+func ChangePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Заглушка для проверки пользователя
+	login := "Guest" // Извлечение логина пользователя из сессии
+
+	// Получаем новый пароль
+	newPassword := r.FormValue("new-password")
+	if len(newPassword) < 8 {
+		http.Error(w, "Password must be at least 8 characters long", http.StatusBadRequest)
+		return
+	}
+
+	// Хэшируем новый пароль
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+		return
+	}
+
+	// Обновляем пароль в базе данных
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	collection := GetCollection("users")
+	_, err = collection.UpdateOne(ctx, bson.M{"login": login}, bson.M{"$set": bson.M{"password": string(hashedPassword)}})
+	if err != nil {
+		http.Error(w, "Failed to update password", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/account", http.StatusSeeOther)
+}
+func DeleteAccountHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Заглушка для проверки пользователя
+	login := "Guest" // Извлечение логина пользователя из сессии
+
+	// Удаляем аккаунт из базы данных
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	collection := GetCollection("users")
+	_, err := collection.DeleteOne(ctx, bson.M{"login": login})
+	if err != nil {
+		http.Error(w, "Failed to delete account", http.StatusInternalServerError)
+		return
+	}
+
+	// Перенаправляем на главную страницу
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

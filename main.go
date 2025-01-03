@@ -25,6 +25,9 @@ func main() {
 	r.HandleFunc("/login", server.LoginHandler).Methods("GET", "POST")
 	r.HandleFunc("/users", server.UsersHandler).Methods("GET")
 	r.HandleFunc("/delete-user/{id}", server.DeleteUserHandler).Methods("POST")
+	r.HandleFunc("/account", server.AccountHandler).Methods("GET")
+	r.HandleFunc("/account/change-password", server.ChangePasswordHandler).Methods("POST")
+	r.HandleFunc("/account/delete", server.DeleteAccountHandler).Methods("POST")
 
 	// Запускаем сервер
 	fmt.Println("Сервер запущен на http://localhost:8080")
