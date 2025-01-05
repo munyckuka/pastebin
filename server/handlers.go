@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
-	"encoding/json"
+	"log"
+
+	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	"net/http"
@@ -26,34 +28,44 @@ func MainPageHandler(w http.ResponseWriter, r *http.Request) {
 
 // Страница создания пасты
 func CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
-	// Создаем контекст
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Подключаемся к коллекции "pastes"
-	collection := GetCollection("pastes")
-
-	// Парсим входные данные
-	var paste models.Paste
-	if err := json.NewDecoder(r.Body).Decode(&paste); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Устанавливаем дату создания и ID
-	paste.ID = primitive.NewObjectID()
-	paste.CreatedAt = time.Now() // Устанавливаем текущую дату как time.Time
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	// Добавляем в базу данных
+	r.ParseForm()
+	content := r.FormValue("content")
+	title := r.FormValue("title")
+
+	if content == "" {
+		http.Error(w, "Content is required", http.StatusBadRequest)
+		return
+	}
+
+	collection := GetCollection("pastes")
+
+	// Создание объекта пасты
+	paste := models.Paste{
+		ID:        primitive.NewObjectID(),
+		Title:     title,
+		Content:   content,
+		CreatedAt: time.Now(),
+	}
+
 	_, err := collection.InsertOne(ctx, paste)
 	if err != nil {
 		http.Error(w, "Failed to save paste", http.StatusInternalServerError)
 		return
 	}
 
-	// Отправляем успешный ответ
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Paste created successfully", "id": paste.ID.Hex()})
+	// test
+	log.Printf("Создана паста с ID: %s", paste.ID.Hex())
+
+	// Перенаправление на страницу пасты
+	http.Redirect(w, r, fmt.Sprintf("/paste/%s", paste.ID.Hex()), http.StatusSeeOther)
 }
 
 // Просмотр пасты по ID
@@ -77,6 +89,16 @@ func ViewPasteHandler(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		http.Error(w, "Ошибка базы данных", http.StatusInternalServerError)
 		return
+	}
+	// Счетчик кол-во просмотров
+	_, err = collection.UpdateOne(
+		r.Context(),
+		bson.M{"_id": objID},
+		bson.M{"$inc": bson.M{"current_reads": 1}},
+	)
+	if err != nil {
+		log.Printf("Ошибка при обновлении счётчика просмотров: %v", err)
+		// Не прерываем выполнение, так как это не критично
 	}
 
 	// Отображаем страницу с данными пасты
@@ -120,15 +142,28 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Подключаемся к коллекции пользователей
+		collection := GetCollection("users")
+
+		// Проверяем, существует ли уже пользователь с таким email
+		var existingUser models.User
+		err := collection.FindOne(ctx, bson.M{"email": email}).Decode(&existingUser)
+		if err == nil {
+			// Пользователь с таким email уже существует
+			http.Error(w, "Email is already registered", http.StatusConflict)
+			return
+		} else if err != mongo.ErrNoDocuments {
+			// Ошибка при попытке найти пользователя
+			http.Error(w, "Failed to check existing user", http.StatusInternalServerError)
+			return
+		}
+
 		// Хэшируем пароль
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
 			http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 			return
 		}
-
-		// Подключаемся к коллекции пользователей
-		collection := GetCollection("users")
 
 		// Создаем нового пользователя
 		user := models.User{
@@ -220,17 +255,54 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/users", http.StatusSeeOther)
 }
 func AccountHandler(w http.ResponseWriter, r *http.Request) {
-	// Заглушка для проверки пользователя (например, сессии)
-	login := "Guest" // Здесь будет извлечение логина из сессии
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	// Отображаем страницу личного кабинета
-	tmpl, err := template.ParseFiles("static/account.html")
+	// Заглушка для проверки текущего пользователя
+	// В реальной реализации используйте сессию или токен для идентификации пользователя
+	email := "example@example.com" // Временно, заменить на реальный email из сессии
+
+	collection := GetCollection("users")
+	var user models.User
+	err := collection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
 	if err != nil {
-		http.Error(w, "Failed to load account page", http.StatusInternalServerError)
+		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
-	tmpl.Execute(w, struct{ Login string }{Login: login})
+
+	if r.Method == http.MethodGet {
+		// Загрузка страницы аккаунта
+		tmpl, err := template.ParseFiles("web/account.html")
+		if err != nil {
+			http.Error(w, "Failed to load account page", http.StatusInternalServerError)
+			return
+		}
+		tmpl.Execute(w, user)
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		// Обновление данных пользователя
+		newPassword := r.FormValue("password")
+
+		if newPassword != "" {
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+			if err != nil {
+				http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+				return
+			}
+			_, err = collection.UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"password": string(hashedPassword)}})
+			if err != nil {
+				http.Error(w, "Failed to update password", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		http.Redirect(w, r, "/account", http.StatusSeeOther)
+		return
+	}
 }
+
 func ChangePasswordHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -268,25 +340,19 @@ func ChangePasswordHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/account", http.StatusSeeOther)
 }
 func DeleteAccountHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Заглушка для проверки пользователя
-	login := "Guest" // Извлечение логина пользователя из сессии
-
-	// Удаляем аккаунт из базы данных
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	// Временно: используйте сессию или токен для идентификации пользователя
+	email := "example@example.com"
+
 	collection := GetCollection("users")
-	_, err := collection.DeleteOne(ctx, bson.M{"login": login})
+	_, err := collection.DeleteOne(ctx, bson.M{"email": email})
 	if err != nil {
 		http.Error(w, "Failed to delete account", http.StatusInternalServerError)
 		return
 	}
 
-	// Перенаправляем на главную страницу
+	// Редирект на главную страницу после удаления
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

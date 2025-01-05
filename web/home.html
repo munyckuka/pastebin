@@ -129,35 +129,38 @@
 </div>
 <div class="container">
     <h1>New Paste</h1>
-    <textarea placeholder="Type here..."></textarea>
-    <div class="settings">
-        <label for="title">Title:</label>
-        <input type="text" id="title" placeholder="Type here...">
+    <form action="/create-paste" method="POST">
 
-        <label for="expires">Expires:</label>
-        <select id="expires">
-            <option value="1hour">1 Hour</option>
-            <option value="1day">1 Day</option>
-            <option value="1week">1 Week</option>
-            <option value="1month">1 Month</option>
-            <option value="6months">6 Months</option>
-            <option value="1year">1 Year</option>
-            <option value="never">Never</option>
-        </select>
+        <textarea name="content" required placeholder="Type here..."></textarea>
+        <div class="settings">
+            <label for="title">Title:</label>
+            <input type="text" id="title" placeholder="Type here...">
 
-        <label for="password">Password:</label>
-        <input type="text" id="password" placeholder="Type here...">
+            <label for="expires">Expires:</label>
+            <select id="expires">
+                <option value="1hour">1 Hour</option>
+                <option value="1day">1 Day</option>
+                <option value="1week">1 Week</option>
+                <option value="1month">1 Month</option>
+                <option value="6months">6 Months</option>
+                <option value="1year">1 Year</option>
+                <option value="never">Never</option>
+            </select>
 
-        <label for="delete-after">Delete after:</label>
-        <div class="inline">
-            <input type="number" id="delete-after" placeholder="Number of reads">
-            <input type="checkbox" id="delete-checkbox">
+            <label for="password">Password:</label>
+            <input type="text" id="password" placeholder="Type here...">
+
+            <label for="delete-after">Delete after:</label>
+            <div class="inline">
+                <input type="number" id="delete-after" placeholder="Number of reads">
+                <input type="checkbox" id="delete-checkbox">
+            </div>
         </div>
-    </div>
 
-    <div class="create-button">
-        <button id="create_paste">Create Paste</button>
-    </div>
+        <div class="create-button">
+            <button id="create_paste">Create Paste</button>
+        </div>
+    </form>
 </div>
 <script>
     document.getElementById("create_paste").addEventListener('click', function () {
