@@ -81,6 +81,9 @@
 <div class="signup-container">
   <form id="signup-form" action="/signup" method="post">
     <h2>Sign up</h2>
+    {{if .ErrorMessage}}
+    <p style="color: red;">{{.ErrorMessage}}</p>
+    {{end}}
     <label for="login">Login:</label>
     <input type="text" id="login" name="login" placeholder="Type here..." required>
 

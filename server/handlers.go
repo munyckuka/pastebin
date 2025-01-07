@@ -109,6 +109,58 @@ func ViewPasteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func AllPastesHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	collection := GetCollection("pastes")
+
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		http.Error(w, "Failed to fetch pastes", http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var pastes []models.Paste
+	if err = cursor.All(ctx, &pastes); err != nil {
+		http.Error(w, "Failed to decode pastes", http.StatusInternalServerError)
+		return
+	}
+
+	tmpl := template.Must(template.ParseFiles("web/allpastes.html"))
+	if err := tmpl.Execute(w, pastes); err != nil {
+		http.Error(w, "Failed to render template", http.StatusInternalServerError)
+	}
+}
+func DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		http.Error(w, "Invalid paste ID", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	collection := GetCollection("pastes")
+	_, err = collection.DeleteOne(ctx, bson.M{"_id": objID})
+	if err != nil {
+		http.Error(w, "Failed to delete paste", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/all-pastes", http.StatusSeeOther)
+}
+
 func SignupHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		// Отображаем страницу регистрации
@@ -131,14 +183,15 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 		email := r.FormValue("email")
 		password := r.FormValue("password")
 
+		// Проверяем, что все поля заполнены
 		if login == "" || email == "" || password == "" {
-			http.Error(w, "All fields are required", http.StatusBadRequest)
+			renderSignupPage(w, "All fields are required", login, email)
 			return
 		}
 
 		// Проверка длины пароля
 		if len(password) < 8 {
-			http.Error(w, "Password must be at least 8 characters long", http.StatusBadRequest)
+			renderSignupPage(w, "Password must be at least 8 characters long", login, email)
 			return
 		}
 
@@ -150,10 +203,10 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 		err := collection.FindOne(ctx, bson.M{"email": email}).Decode(&existingUser)
 		if err == nil {
 			// Пользователь с таким email уже существует
-			http.Error(w, "Email is already registered", http.StatusConflict)
+			renderSignupPage(w, "Email is already registered", login, email)
 			return
 		} else if err != mongo.ErrNoDocuments {
-			// Ошибка при попытке найти пользователя
+			// Ошибка базы данных
 			http.Error(w, "Failed to check existing user", http.StatusInternalServerError)
 			return
 		}
@@ -186,6 +239,23 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+}
+
+// renderSignupPage отображает страницу регистрации с сообщением об ошибке
+func renderSignupPage(w http.ResponseWriter, errorMessage, login, email string) {
+	tmpl, err := template.ParseFiles("web/signup.html")
+	if err != nil {
+		http.Error(w, "Failed to load signup page", http.StatusInternalServerError)
+		return
+	}
+
+	// Передаем сообщение об ошибке и текущие данные в шаблон
+	data := map[string]interface{}{
+		"ErrorMessage": errorMessage,
+		"Login":        login,
+		"Email":        email,
+	}
+	tmpl.Execute(w, data)
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -304,15 +374,21 @@ func AccountHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ChangePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	// Извлекаем user-id из URL
+	vars := mux.Vars(r)
+	userID := vars["user-id"]
+
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
 	// Заглушка для проверки пользователя
-	login := "Guest" // Извлечение логина пользователя из сессии
+	// На реальном проекте здесь будет извлечение логина или ID из сессии
+	// Например, userID может быть получен из сессии или токена
+	// login := getLoginFromSession(r)  // Тестовый логин
 
-	// Получаем новый пароль
+	// Получаем новый пароль из формы
 	newPassword := r.FormValue("new-password")
 	if len(newPassword) < 8 {
 		http.Error(w, "Password must be at least 8 characters long", http.StatusBadRequest)
@@ -326,19 +402,22 @@ func ChangePasswordHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Обновляем пароль в базе данных
+	// Подключаемся к базе данных
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	collection := GetCollection("users")
-	_, err = collection.UpdateOne(ctx, bson.M{"login": login}, bson.M{"$set": bson.M{"password": string(hashedPassword)}})
+	// Обновляем пароль пользователя, чей ID совпадает с user-id
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": userID}, bson.M{"$set": bson.M{"password": string(hashedPassword)}})
 	if err != nil {
 		http.Error(w, "Failed to update password", http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, "/account", http.StatusSeeOther)
+	// Перенаправляем на страницу аккаунта
+	http.Redirect(w, r, "/account/"+userID, http.StatusSeeOther)
 }
+
 func DeleteAccountHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
