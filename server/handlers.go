@@ -164,6 +164,58 @@ func DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
 	// Редирект на список паст
 	http.Redirect(w, r, "/all-pastes", http.StatusSeeOther)
 }
+func EditPasteHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	// Конвертируем строку ID в ObjectID
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		http.Error(w, "Invalid paste ID", http.StatusBadRequest)
+		return
+	}
+
+	collection := GetCollection("pastes")
+	if r.Method == http.MethodGet {
+		// Получаем пасту из базы
+		var paste models.Paste
+		err := collection.FindOne(r.Context(), bson.M{"_id": objID}).Decode(&paste)
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "Paste not found", http.StatusNotFound)
+			return
+		} else if err != nil {
+			http.Error(w, "Database error", http.StatusInternalServerError)
+			return
+		}
+
+		// Отображаем форму редактирования
+		tmpl := template.Must(template.ParseFiles("web/editpaste.html"))
+		tmpl.Execute(w, paste)
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		// Получаем данные из формы
+		r.ParseForm()
+		title := r.FormValue("title")
+		content := r.FormValue("content")
+
+		// Обновляем данные в базе
+		_, err := collection.UpdateOne(
+			r.Context(),
+			bson.M{"_id": objID},
+			bson.M{"$set": bson.M{"title": title, "content": content}},
+		)
+		if err != nil {
+			http.Error(w, "Failed to update paste", http.StatusInternalServerError)
+			return
+		}
+
+		// Редирект на страницу просмотра пасты
+		http.Redirect(w, r, fmt.Sprintf("/paste/%s", objID.Hex()), http.StatusSeeOther)
+
+	}
+}
 
 func SignupHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {

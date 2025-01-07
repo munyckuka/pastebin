@@ -30,6 +30,7 @@ func main() {
 	r.HandleFunc("/account/delete", server.DeleteAccountHandler).Methods("POST")
 	r.HandleFunc("/all-pastes", server.AllPastesHandler).Methods("GET")
 	r.HandleFunc("/pastes/{id}/delete", server.DeletePasteHandler).Methods("POST")
+	r.HandleFunc("/pastes/{id}/edit", server.EditPasteHandler).Methods("GET", "POST")
 
 	// Запускаем сервер
 	fmt.Println("Сервер запущен на http://localhost:8080")

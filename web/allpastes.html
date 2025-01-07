@@ -67,12 +67,14 @@
     <h1>All Pastes</h1>
     {{range .}}
     <div class="paste-item">
-        <h2 class="paste-title">{{.Title}}</h2>
-        <p class="paste-content">{{.Content}}</p>
-        <form action="/pastes/{{.ID.Hex}}/delete" method="POST">
+        <h2>{{.Title}}</h2>
+        <p>{{.Content}}</p>
+        <form action="/pastes/{{.ID.Hex}}" method="POST">
             <button type="submit" class="btn-delete">Delete</button>
         </form>
+        <a href="/pastes/{{.ID.Hex}}/edit" class="btn-edit">Edit</a>
     </div>
+
     {{end}}
 </div>
 </body>
