@@ -139,15 +139,18 @@ func DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получение ID из URL
 	vars := mux.Vars(r)
 	id := vars["id"]
 
+	// Конвертация строки ID в ObjectID
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		http.Error(w, "Invalid paste ID", http.StatusBadRequest)
 		return
 	}
 
+	// Удаление из базы данных
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -158,6 +161,7 @@ func DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Редирект на список паст
 	http.Redirect(w, r, "/all-pastes", http.StatusSeeOther)
 }
 
