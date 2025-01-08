@@ -69,7 +69,7 @@
     <div class="paste-item">
         <h2>{{.Title}}</h2>
         <p>{{.Content}}</p>
-        <form action="/pastes/{{.ID.Hex}}" method="POST">
+        <form action="/pastes/{{.ID.Hex}}/delete" method="POST">
             <button type="submit" class="btn-delete">Delete</button>
         </form>
         <a href="/pastes/{{.ID.Hex}}/edit" class="btn-edit">Edit</a>
