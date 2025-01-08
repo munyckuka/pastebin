@@ -110,11 +110,13 @@ func ViewPasteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func AllPastesHandler(w http.ResponseWriter, r *http.Request) {
+	collection := GetCollection("pastes")
+
+	// Получение всех паст
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	collection := GetCollection("pastes")
-
+	var pastes []models.Paste
 	cursor, err := collection.Find(ctx, bson.M{})
 	if err != nil {
 		http.Error(w, "Failed to fetch pastes", http.StatusInternalServerError)
@@ -122,17 +124,22 @@ func AllPastesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cursor.Close(ctx)
 
-	var pastes []models.Paste
-	if err = cursor.All(ctx, &pastes); err != nil {
-		http.Error(w, "Failed to decode pastes", http.StatusInternalServerError)
-		return
+	for cursor.Next(ctx) {
+		var paste models.Paste
+		if err := cursor.Decode(&paste); err != nil {
+			http.Error(w, "Failed to decode paste", http.StatusInternalServerError)
+			return
+		}
+		pastes = append(pastes, paste)
 	}
 
+	// Рендеринг шаблона с передачей данных
 	tmpl := template.Must(template.ParseFiles("web/allpastes.html"))
 	if err := tmpl.Execute(w, pastes); err != nil {
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)
 	}
 }
+
 func DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
