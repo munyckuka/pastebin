@@ -16,6 +16,9 @@ func main() {
 		log.Fatalf("Ошибка подключения к базе данных: %v", err)
 	}
 
+	// Инициализация логгера
+	server.InitLogger()
+
 	// Настраиваем маршрутизатор
 	r := mux.NewRouter()
 	r.HandleFunc("/", server.MainPageHandler).Methods("GET")

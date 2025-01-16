@@ -70,6 +70,16 @@
         .btn-edit:hover {
             background-color: #2b6dff;
         }
+        .btn-next {
+            text-decoration: none;
+            color: white;
+            font-size: 10px;
+        }
+        .btn-prev {
+            text-decoration: none;
+            color: white;
+            font-size: 10px;
+        }
     </style>
 </head>
 <body>
@@ -80,17 +90,28 @@
 
 <div class="container">
     <h1>All Pastes</h1>
-    {{range .}}
+    {{range .Pastes}}
     <div class="paste-item">
-        <h2 class="paste-title">{{.Title}}</h2>
-        <p class="paste-content">{{.Content}}</p>
-        <p class="paste-created-at">Created at: {{.CreatedAt.Format "2006-01-02"}}</p>
-        <form action="/pastes/{{.ID.Hex}}/delete" method="POST" style="display: inline;">
+        <h2>{{.Title}}</h2>
+        <p>{{.Content}}</p>
+        <small>Created at: {{.CreatedAt}}</small>
+        <form action="/pastes/{{.ID.Hex}}/delete" method="POST">
             <button type="submit" class="btn-delete">Delete</button>
         </form>
         <a href="/pastes/{{.ID.Hex}}/edit" class="btn-edit">Edit</a>
     </div>
     {{end}}
+
+    <!-- Пагинация -->
+    <div class="pagination">
+        {{if gt .Prev 0}}
+        <a href="/all-pastes?page={{.Prev}}" class="btn-prev">Previous</a>
+        {{end}}
+        <span>Page {{.Page}}</span>
+        {{if .Pastes}}
+        <a href="/all-pastes?page={{.Next}}" class="btn-next">Next</a>
+        {{end}}
+    </div>
 </div>
 </body>
 </html>
