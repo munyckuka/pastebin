@@ -90,6 +90,26 @@
 
 <div class="container">
     <h1>All Pastes</h1>
+    <!-- Форма для сортировки и фильтрации -->
+    <form method="GET" action="/all-pastes">
+        <label for="sort">Sort by:</label>
+        <select name="sort" id="sort">
+            <option value="1">Newest to Oldest</option>
+            <option value="-1">Oldest to Newest</option>
+        </select>
+
+        <label for="filter">Filter:</label>
+        <select name="filter" id="filter">
+            <option value="">All</option>
+            <option value="last-year">Last Year</option>
+            <option value="last-month">Last Month</option>
+            <option value="last-week">Last Week</option>
+            <option value="last-day">Last Day</option>
+        </select>
+
+        <button type="submit">Apply</button>
+    </form>
+
     {{range .Pastes}}
     <div class="paste-item">
         <h2>{{.Title}}</h2>
@@ -113,5 +133,26 @@
         {{end}}
     </div>
 </div>
+<script>
+    document.querySelectorAll('.btn-delete').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const form = e.target.closest('form');
+            const response = await fetch(form.action, {
+                method: form.method
+            });
+
+            if (response.ok) {
+                // Удалить элемент из DOM
+                form.closest('.paste-item').remove();
+            } else {
+                // Показать сообщение об ошибке
+                const errorMessage = await response.text();
+                alert(`Error: ${errorMessage}`);
+            }
+        });
+    });
+</script>
+
 </body>
 </html>

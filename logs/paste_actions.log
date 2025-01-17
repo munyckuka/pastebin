@@ -2,3 +2,16 @@
 2025/01/16 21:01:51 handlers.go:94: Created paste: ID=67892d6fae4f8700f32cefdb, Title=, Date=2025-01-16T21:01:51+05:00
 2025/01/16 21:02:12 handlers.go:321: Edited paste: ID=ObjectID("678923fa1613b61556331318"), Date=2025-01-16T21:02:12+05:00
 2025/01/16 21:05:02 handlers.go:329: Edited paste: ID=678924ea688690e8e31364f3, Date=2025-01-16T21:05:02+05:00
+2025/01/17 17:01:04 handlers.go:94: Created paste: ID=678a468053207b52e3f61769, Title=, Date=2025-01-17T17:01:04+05:00
+2025/01/17 17:01:30 handlers.go:261: Deleted paste: ID=678923fa1613b61556331317, Date=2025-01-17T17:01:30+05:00
+2025/01/17 17:01:35 handlers.go:261: Deleted paste: ID=678923fa1613b61556331318, Date=2025-01-17T17:01:35+05:00
+2025/01/17 17:01:40 handlers.go:261: Deleted paste: ID=678924ea688690e8e31364f3, Date=2025-01-17T17:01:40+05:00
+2025/01/17 17:01:42 handlers.go:261: Deleted paste: ID=678924eb688690e8e31364f4, Date=2025-01-17T17:01:42+05:00
+2025/01/17 17:01:45 handlers.go:261: Deleted paste: ID=678924eb688690e8e31364f5, Date=2025-01-17T17:01:45+05:00
+2025/01/17 17:01:53 handlers.go:261: Deleted paste: ID=67892522dd67c591807c7096, Date=2025-01-17T17:01:53+05:00
+2025/01/17 17:02:59 handlers.go:329: Edited paste: ID=67892522dd67c591807c7097, Date=2025-01-17T17:02:59+05:00
+2025/01/17 17:13:45 handlers.go:40: Error: the provided hex string is not a valid ObjectID | StatusCode: 400 | Message: Invalid paste ID
+2025/01/17 17:14:37 handlers.go:40: Error: the provided hex string is not a valid ObjectID | StatusCode: 400 | Message: Invalid paste ID
+2025/01/17 17:25:43 handlers.go:40: Error: the provided hex string is not a valid ObjectID | StatusCode: 400 | Message: Invalid paste ID
+2025/01/17 18:03:24 handlers.go:40: Error: the provided hex string is not a valid ObjectID | StatusCode: 400 | Message: Invalid paste ID
+2025/01/17 18:04:28 handlers.go:40: Error: the provided hex string is not a valid ObjectID | StatusCode: 400 | Message: Invalid paste ID

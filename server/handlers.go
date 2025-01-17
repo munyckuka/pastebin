@@ -34,6 +34,18 @@ func InitLogger() {
 	log.Println("Paste logger initialized.")
 }
 
+func HandleError(w http.ResponseWriter, err error, statusCode int, message string) {
+	// Логгирование ошибки
+	if err != nil {
+		pasteLogger.Printf("Error: %v | StatusCode: %d | Message: %s", err, statusCode, message)
+	} else {
+		pasteLogger.Printf("StatusCode: %d | Message: %s", statusCode, message)
+	}
+
+	// Отправка ответа клиенту
+	http.Error(w, message, statusCode)
+}
+
 // Путь к шаблонам
 const templatesDir = "web"
 
@@ -57,7 +69,7 @@ func CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
 	// Парсинг данных формы
 	err := r.ParseForm()
 	if err != nil {
-		http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+		HandleError(w, err, http.StatusBadRequest, "Failed to parse form data")
 		return
 	}
 
@@ -66,7 +78,7 @@ func CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Проверка обязательных полей
 	if content == "" {
-		http.Error(w, "Content is required", http.StatusBadRequest)
+		HandleError(w, nil, http.StatusBadRequest, "Content is required")
 		return
 	}
 
@@ -85,7 +97,7 @@ func CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = collection.InsertOne(ctx, paste)
 	if err != nil {
 		log.Printf("Ошибка сохранения пасты: %v", err)
-		http.Error(w, "Failed to save paste", http.StatusInternalServerError)
+		HandleError(w, err, http.StatusInternalServerError, "Failed to save paste")
 		return
 	}
 
@@ -108,7 +120,7 @@ func ViewPasteHandler(w http.ResponseWriter, r *http.Request) {
 	// Конвертируем строку ID в ObjectId
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		http.Error(w, "Неверный формат ID", http.StatusBadRequest)
+		HandleError(w, err, http.StatusInternalServerError, "Invalid ID format")
 		return
 	}
 
@@ -116,10 +128,10 @@ func ViewPasteHandler(w http.ResponseWriter, r *http.Request) {
 	var paste models.Paste
 	err = collection.FindOne(r.Context(), bson.M{"_id": objID}).Decode(&paste)
 	if err == mongo.ErrNoDocuments {
-		http.Error(w, "Паста не найдена", http.StatusNotFound)
+		HandleError(w, err, http.StatusInternalServerError, "Paste not found")
 		return
 	} else if err != nil {
-		http.Error(w, "Ошибка базы данных", http.StatusInternalServerError)
+		HandleError(w, err, http.StatusInternalServerError, "BD connection error")
 		return
 	}
 	// Счетчик кол-во просмотров
@@ -226,14 +238,14 @@ func DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Получение ID из URL
-	vars := mux.Vars(r)
-	id := vars["id"]
+	//vars := mux.Vars(r)
+	id := "asd"
 
 	// Конвертация строки ID в ObjectID
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		log.Printf("Invalid paste ID format: %s", id)
-		http.Error(w, "Invalid paste ID", http.StatusBadRequest)
+		HandleError(w, err, http.StatusBadRequest, "Invalid paste ID")
 		return
 	}
 
@@ -245,7 +257,7 @@ func DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
 	result, err := collection.DeleteOne(ctx, bson.M{"_id": objID})
 	if err != nil {
 		log.Printf("Failed to delete paste with ID %s: %v", id, err)
-		http.Error(w, "Failed to delete paste", http.StatusInternalServerError)
+		HandleError(w, err, http.StatusInternalServerError, "Failed to delete paste")
 		return
 	}
 
@@ -275,7 +287,7 @@ func EditPasteHandler(w http.ResponseWriter, r *http.Request) {
 	// Конвертируем строку ID в ObjectID
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		http.Error(w, "Invalid paste ID", http.StatusBadRequest)
+		HandleError(w, err, http.StatusBadRequest, "Invalid paste ID")
 		return
 	}
 
