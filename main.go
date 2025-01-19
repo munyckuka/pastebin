@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-
-	"github.com/gorilla/mux"
+	"pastebin/middleware"
 	"pastebin/server"
 )
 
@@ -21,6 +21,10 @@ func main() {
 
 	// Настраиваем маршрутизатор
 	r := mux.NewRouter()
+
+	// Rate limiting
+	r.Use(middleware.RateLimiterMiddleware)
+
 	r.HandleFunc("/", server.MainPageHandler).Methods("GET")
 	r.HandleFunc("/create-paste", server.CreatePasteHandler).Methods("POST")
 	r.HandleFunc("/paste/{id}", server.ViewPasteHandler).Methods("GET")
