@@ -7,7 +7,10 @@ import (
 	"log"
 )
 
-var db *mongo.Database
+var (
+	db     *mongo.Database
+	client *mongo.Client
+)
 
 // Подключение к MongoDB
 func ConnectToDB() error {
@@ -32,4 +35,14 @@ func ConnectToDB() error {
 // Получить коллекцию из базы данных
 func GetCollection(name string) *mongo.Collection {
 	return db.Collection(name)
+}
+
+// Закрыть соединение с базой данных
+func CloseDB() error {
+	if client != nil {
+		log.Println("Закрытие соединения с MongoDB...")
+		return client.Disconnect(context.TODO())
+	}
+	log.Println("Соединение с MongoDB уже закрыто.")
+	return nil
 }
