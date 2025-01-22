@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -18,20 +19,64 @@ func SendEmailHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Разбираем форму
+	err := r.ParseMultipartForm(10 << 20) // Ограничение размера (10MB)
+	if err != nil {
+		http.Error(w, "Unable to parse form: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// Получаем данные из формы
 	email := r.FormValue("email")
 	message := r.FormValue("message")
+	file, fileHeader, err := r.FormFile("file")   // Получаем файл
+	if err != nil && err != http.ErrMissingFile { // Пропускаем, если файла нет
+		http.Error(w, "Unable to process file: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		if file != nil {
+			file.Close()
+		}
+	}()
 
 	if email == "" || message == "" {
 		http.Error(w, "Email and message fields cannot be empty", http.StatusBadRequest)
 		return
 	}
 
+	// Если файл есть, сохраняем его во временную директорию
+	var filePath string
+	if file != nil {
+		tempFile, err := os.CreateTemp("", fileHeader.Filename)
+		if err != nil {
+			http.Error(w, "Unable to create temporary file: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer tempFile.Close()
+
+		// Копируем содержимое файла
+		_, err = io.Copy(tempFile, file)
+		if err != nil {
+			http.Error(w, "Failed to save file: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		filePath = tempFile.Name()
+	}
+
 	// Отправка письма
-	err := sendEmail(email, message)
-	if err != nil {
-		http.Error(w, "Failed to send email: "+err.Error(), http.StatusInternalServerError)
-		return
+	if filePath != "" {
+		err = sendEmailWithAttachment(email, message, filePath)
+		if err != nil {
+			http.Error(w, "Failed to send email with attachment: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		err = sendEmail(email, message)
+		if err != nil {
+			http.Error(w, "Failed to send email: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Успешный ответ
@@ -43,8 +88,8 @@ func sendEmail(to string, body string) error {
 	// Настройки SMTP
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
-	senderEmail := "ofblooms@gmail.com"     // Укажите вашу почту
-	senderPassword := "qewa htwv qwoc xbrf" // Укажите ваш пароль
+	senderEmail := "ofblooms@gmail.com"
+	senderPassword := "qewa htwv qwoc xbrf"
 
 	auth := smtp.PlainAuth("", senderEmail, senderPassword, smtpHost)
 
@@ -58,12 +103,12 @@ func sendEmail(to string, body string) error {
 	return smtp.SendMail(smtpHost+":"+smtpPort, auth, senderEmail, []string{to}, msg)
 }
 
-func sendEmailWithAttachment(to string, subject string, body string, attachmentPath string) error {
+func sendEmailWithAttachment(to string, body string, attachmentPath string) error {
 	// SMTP настройки
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
-	senderEmail := "your-email@gmail.com"
-	senderPassword := "your-email-password"
+	senderEmail := "ofblooms@gmail.com"
+	senderPassword := "qewa htwv qwoc xbrf"
 
 	// Создаем буфер для составления письма
 	var buf bytes.Buffer
@@ -73,7 +118,7 @@ func sendEmailWithAttachment(to string, subject string, body string, attachmentP
 	headers := map[string]string{
 		"From":         senderEmail,
 		"To":           to,
-		"Subject":      subject,
+		"Subject":      "test",
 		"MIME-Version": "1.0",
 		"Content-Type": fmt.Sprintf("multipart/mixed; boundary=%s", writer.Boundary()),
 	}

@@ -132,7 +132,7 @@
     <p class="info">Use the form below to send an email to a user.</p>
 
     <!-- Форма для отправки сообщения -->
-    <form action="/send-email" method="POST" class="email-form">
+    <form action="/send-email" method="POST" enctype="multipart/form-data" class="email-form">
       <div class="form-group">
         <label for="email">User Email:</label>
         <input type="email" id="email" name="email" required placeholder="Enter user email">
@@ -140,13 +140,14 @@
       <div class="form-group">
         <label for="message">Message:</label>
         <textarea id="message" name="message" required placeholder="Enter your message"></textarea>
-        <p>
-          <label>Add files (multiple): </label><br/>
-          <input type="file" name="example3[]" multiple="multiple"/>
-        </p>
       </div>
-      <button type="submit" class="btn btn-submit">Send Message</button>
+      <div class="form-group">
+        <label for="file">Add file:</label>
+        <input type="file" id="file" name="file">
+      </div>
+      <button type="submit">Send Email</button>
     </form>
+
   </div>
 </main>
 </body>
