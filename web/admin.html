@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="css/admin.css"> <!-- Укажите путь к CSS -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #1d1f22;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      background-color: #121212;
+      padding: 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .title {
+      color: #e0e0e0;
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .navigation .btn {
+      background-color: #343a40;
+      color: #fff;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+
+    .navigation .btn:hover {
+      background-color: #495057;
+    }
+
+    .main-content {
+      text-align: center;
+      margin-top: 50px;
+    }
+
+    .subtitle {
+      font-size: 20px;
+      color: #ffffff;
+    }
+
+    .info {
+      font-size: 16px;
+      color: #b3b3b3;
+    }
+
+    .email-form {
+      margin-top: 30px;
+      background-color: #2c2f33;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      color: #e0e0e0;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    input[type="email"],
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #495057;
+      border-radius: 5px;
+      background-color: #343a40;
+      color: #fff;
+      font-size: 16px;
+    }
+
+    textarea {
+      height: 100px;
+      resize: none;
+    }
+
+    .btn-submit {
+      background-color: #4caf50;
+      color: #fff;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .btn-submit:hover {
+      background-color: #45a049;
+    }
+
+  </style>
+</head>
+<body>
+<header class="header">
+  <div class="container">
+    <h1 class="title">Admin Panel</h1>
+    <nav class="navigation">
+      <a href="/all-pastes" class="btn btn-primary">View All Pastes</a>
+    </nav>
+  </div>
+</header>
+<main class="main-content">
+  <div class="container">
+    <h2 class="subtitle">Welcome, Admin</h2>
+    <p class="info">Use the form below to send an email to a user.</p>
+
+    <!-- Форма для отправки сообщения -->
+    <form action="/send-email" method="POST" class="email-form">
+      <div class="form-group">
+        <label for="email">User Email:</label>
+        <input type="email" id="email" name="email" required placeholder="Enter user email">
+      </div>
+      <div class="form-group">
+        <label for="message">Message:</label>
+        <textarea id="message" name="message" required placeholder="Enter your message"></textarea>
+        <p>
+          <label>Add files (multiple): </label><br/>
+          <input type="file" name="example3[]" multiple="multiple"/>
+        </p>
+      </div>
+      <button type="submit" class="btn btn-submit">Send Message</button>
+    </form>
+  </div>
+</main>
+</body>
+</html>

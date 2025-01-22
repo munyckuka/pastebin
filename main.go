@@ -34,7 +34,8 @@ func setupRoutes() *mux.Router {
 	r.HandleFunc("/all-pastes", server.AllPastesHandler).Methods("GET")
 	r.HandleFunc("/pastes/{id}/delete", server.DeletePasteHandler).Methods("POST")
 	r.HandleFunc("/pastes/{id}/edit", server.EditPasteHandler).Methods("GET", "POST")
-
+	r.HandleFunc("/send-email", server.SendEmailHandler).Methods("POST")
+	r.HandleFunc("/admin", server.AdminPageHandler).Methods("GET")
 	return r
 }
 
