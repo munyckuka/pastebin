@@ -23,7 +23,7 @@
       color: #333;
     }
 
-    .login-container {
+    .signup-container {
       background-color: #ffffff;
       padding: 30px;
       border-radius: 10px;
@@ -35,7 +35,7 @@
     h2 {
       margin-bottom: 20px;
       font-size: 24px;
-      color: #000;
+      color: white;
     }
 
     label {
@@ -43,6 +43,7 @@
       margin: 10px 0 5px;
       text-align: left;
       font-weight: bold;
+      color: #b3b3b3;
     }
 
     input {
@@ -69,27 +70,37 @@
       cursor: pointer;
       font-size: 16px;
       text-transform: uppercase;
+      margin-bottom: 10px;
     }
 
     .btn:hover {
       background-color: #555;
     }
-
+    .container {
+      background-color: black;
+      padding: 20px;
+      border-radius: 20px;
+    }
+    p {
+      color: #b3b3b3;
+    }
   </style>
 </head>
 <body>
-<div class="login-container">
-  <form id="login-form">
-    <h2>Log in</h2>
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" placeholder="Type here..." required>
-
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" placeholder="Type here..." required>
-
-    <button type="submit" class="btn" onclick="window.location.href='/login'">Log In</button>
-
+<div class="container">
+  <h2>Login</h2>
+  <form action="/login" method="POST" class="auth-form">
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required placeholder="Enter your email">
+    </div>
+    <div class="form-group">
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" required placeholder="Enter your password">
+    </div>
+    <button type="submit" class="btn">Login</button>
   </form>
+  <p>Don't have an account? <a href="/signup">Sign up</a></p>
 </div>
 </body>
 </html>

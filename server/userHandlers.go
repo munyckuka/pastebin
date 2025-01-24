@@ -2,14 +2,15 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	"net/http"
 	"pastebin/models"
+	"pastebin/utils"
 	"time"
 )
 
@@ -17,83 +18,62 @@ import (
 const templatesDir = "web"
 
 func SignupHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		// Отображаем страницу регистрации
-		tmpl, err := template.ParseFiles("web/signup.html")
-		if err != nil {
-			http.Error(w, "Failed to load signup page", http.StatusInternalServerError)
-			return
-		}
-		tmpl.Execute(w, nil)
-		return
-	}
-
 	if r.Method == http.MethodPost {
-		// Создаем контекст для запроса
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-
-		// Парсим данные из формы
-		login := r.FormValue("login")
 		email := r.FormValue("email")
 		password := r.FormValue("password")
+		confirmPassword := r.FormValue("confirm_password")
 
-		// Проверяем, что все поля заполнены
-		if login == "" || email == "" || password == "" {
-			renderSignupPage(w, "All fields are required", login, email)
+		// Проверка на совпадение паролей
+		if password != confirmPassword {
+			http.Error(w, "Passwords do not match", http.StatusBadRequest)
 			return
 		}
 
-		// Проверка длины пароля
-		if len(password) < 8 {
-			renderSignupPage(w, "Password must be at least 8 characters long", login, email)
-			return
-		}
-
-		// Подключаемся к коллекции пользователей
-		collection := GetCollection("users")
-
-		// Проверяем, существует ли уже пользователь с таким email
+		// Проверка на наличие пользователя с таким email
 		var existingUser models.User
-		err := collection.FindOne(ctx, bson.M{"email": email}).Decode(&existingUser)
+		err := db.Collection("users").FindOne(context.TODO(), bson.M{"email": email}).Decode(&existingUser)
 		if err == nil {
-			// Пользователь с таким email уже существует
-			renderSignupPage(w, "Email is already registered", login, email)
-			return
-		} else if err != mongo.ErrNoDocuments {
-			// Ошибка базы данных
-			http.Error(w, "Failed to check existing user", http.StatusInternalServerError)
+			http.Error(w, "Email already registered", http.StatusBadRequest)
 			return
 		}
 
-		// Хэшируем пароль
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		// Хеширование пароля
+		passwordHash, err := utils.HashPassword(password)
 		if err != nil {
-			http.Error(w, "Failed to hash password", http.StatusInternalServerError)
+			http.Error(w, "Error hashing password", http.StatusInternalServerError)
 			return
 		}
 
-		// Создаем нового пользователя
+		// Создание нового пользователя
 		user := models.User{
-			ID:       primitive.NewObjectID(),
-			Login:    login,
-			Email:    email,
-			Password: string(hashedPassword),
+			Email:        email,
+			PasswordHash: passwordHash,
+			IsVerified:   false, // Не подтверждено
 		}
 
-		// Сохраняем пользователя в базе данных
-		_, err = collection.InsertOne(ctx, user)
+		// Сохранение пользователя в базу данных
+		_, err = db.Collection("users").InsertOne(context.TODO(), user)
 		if err != nil {
-			http.Error(w, "Failed to save user", http.StatusInternalServerError)
+			http.Error(w, "Error saving user", http.StatusInternalServerError)
 			return
 		}
 
-		// Ответ при успешной регистрации
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
+		// Генерация токена для подтверждения email
+		token := utils.GenerateToken(email)
+		// Отправка письма с ссылкой для подтверждения email
+		err = utils.SendVerificationEmail(email, token)
+		if err != nil {
+			http.Error(w, "Failed to send verification email", http.StatusInternalServerError)
+			return
+		}
 
-	http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		// Ответ пользователю
+		fmt.Fprintf(w, "Registration successful. Please verify your email.")
+	} else {
+		// Отображаем форму регистрации
+		tmpl := template.Must(template.ParseFiles("web/signup.html"))
+		tmpl.Execute(w, nil)
+	}
 }
 
 // renderSignupPage отображает страницу регистрации с сообщением об ошибке
@@ -114,37 +94,39 @@ func renderSignupPage(w http.ResponseWriter, errorMessage, login, email string) 
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if r.Method == http.MethodGet {
-		tmpl, _ := template.ParseFiles("web/login.html")
-		tmpl.Execute(w, nil)
-		return
-	}
-
 	if r.Method == http.MethodPost {
-		r.ParseForm()
 		email := r.FormValue("email")
 		password := r.FormValue("password")
 
+		// Проверка пользователя
 		var user models.User
-		collection := GetCollection("users")
-		err := collection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+		err := db.Collection("users").FindOne(context.TODO(), bson.M{"email": email}).Decode(&user)
 		if err != nil {
-			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 			return
 		}
 
-		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+		// Сравнение пароля
+		err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 		if err != nil {
-			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 			return
 		}
 
-		http.Redirect(w, r, "/account", http.StatusSeeOther)
+		// Проверка, подтвержден ли email
+		if !user.IsVerified {
+			http.Error(w, "Email not verified", http.StatusForbidden)
+			return
+		}
+
+		// Успешная авторизация (создание сессии или JWT)
+		fmt.Fprintf(w, "Login successful!")
+	} else {
+		// Отображаем форму входа
+		tmpl := template.Must(template.ParseFiles("web/login.html"))
+		tmpl.Execute(w, nil)
 	}
 }
-
 func UsersHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

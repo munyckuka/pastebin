@@ -35,7 +35,7 @@
     h2 {
       margin-bottom: 20px;
       font-size: 24px;
-      color: #000;
+      color: white;
     }
 
     label {
@@ -43,6 +43,7 @@
       margin: 10px 0 5px;
       text-align: left;
       font-weight: bold;
+      color: #b3b3b3;
     }
 
     input {
@@ -69,41 +70,44 @@
       cursor: pointer;
       font-size: 16px;
       text-transform: uppercase;
+      margin-bottom: 10px;
     }
 
     .btn:hover {
       background-color: #555;
     }
-
+    .container {
+      background-color: black;
+      padding: 20px;
+      border-radius: 20px;
+    }
+    p {
+      color: #b3b3b3;
+    }
   </style>
 </head>
 <body>
-<div class="signup-container">
-  <form id="signup-form" action="/signup" method="post">
-    <h2>Sign up</h2>
-    {{if .ErrorMessage}}
-    <p style="color: red;">{{.ErrorMessage}}</p>
-    {{end}}
-    <label for="login">Login:</label>
-    <input type="text" id="login" name="login" placeholder="Type here..." required>
-
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" placeholder="Type here..." required>
-
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" placeholder="Type here..." required>
-
-    <button type="submit" class="btn">Finish</button>
+<div class="container">
+  <h2>Sign Up</h2>
+  <form action="/signup" method="POST" class="auth-form">
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required placeholder="Enter your email">
+    </div>
+    <div class="form-group">
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username" required placeholder="Enter your username">
+    </div>
+    <div class="form-group">
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" required placeholder="Enter your password">
+    </div>
+    <div class="form-group">
+      <label for="confirm-password">Confirm Password:</label>
+      <input type="password" id="confirm-password" name="confirm_password" required placeholder="Confirm your password">
+    </div>
+    <button type="submit" class="btn">Sign Up</button>
   </form>
+  <p>Already have an account? <a href="/login">Log in</a></p>
 </div>
-<script>
-  document.getElementById("signup-form").addEventListener("submit", function (event) {
-    const password = document.getElementById("password").value;
-    if (password.length < 8) {
-      alert("Password must be at least 8 characters long.");
-      event.preventDefault(); // Останавливает отправку формы
-    }
-  });
-</script>
-</body>
-</html>
+</body></html>

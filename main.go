@@ -24,6 +24,10 @@ func setupRoutes() *mux.Router {
 	r.HandleFunc("/", server.MainPageHandler).Methods("GET")
 	r.HandleFunc("/create-paste", server.CreatePasteHandler).Methods("POST")
 	r.HandleFunc("/paste/{id}", server.ViewPasteHandler).Methods("GET")
+	r.HandleFunc("/all-pastes", server.AllPastesHandler).Methods("GET")
+	r.HandleFunc("/pastes/{id}/delete", server.DeletePasteHandler).Methods("POST")
+	r.HandleFunc("/pastes/{id}/edit", server.EditPasteHandler).Methods("GET", "POST")
+
 	r.HandleFunc("/signup", server.SignupHandler).Methods("GET", "POST")
 	r.HandleFunc("/login", server.LoginHandler).Methods("GET", "POST")
 	r.HandleFunc("/users", server.UsersHandler).Methods("GET")
@@ -31,10 +35,10 @@ func setupRoutes() *mux.Router {
 	r.HandleFunc("/account", server.AccountHandler).Methods("GET")
 	r.HandleFunc("/account/{user-id}/change-password", server.ChangePasswordHandler).Methods("POST")
 	r.HandleFunc("/account/delete", server.DeleteAccountHandler).Methods("POST")
-	r.HandleFunc("/all-pastes", server.AllPastesHandler).Methods("GET")
-	r.HandleFunc("/pastes/{id}/delete", server.DeletePasteHandler).Methods("POST")
-	r.HandleFunc("/pastes/{id}/edit", server.EditPasteHandler).Methods("GET", "POST")
+
 	r.HandleFunc("/send-email", server.SendEmailHandler).Methods("POST")
+	r.HandleFunc("/verify-email/{token}", server.VerifyEmailHandler).Methods("GET")
+
 	r.HandleFunc("/admin", server.AdminPageHandler).Methods("GET")
 	return r
 }

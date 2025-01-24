@@ -2,14 +2,18 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
 	"io"
 	"log"
 	"mime/multipart"
 	"net/http"
 	"net/smtp"
 	"os"
+	"pastebin/utils"
+	"strings"
 )
 
 // Обработчик для отправки email
@@ -72,7 +76,7 @@ func SendEmailHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		err = sendEmail(email, message)
+		err = SendEmail(email, message)
 		if err != nil {
 			http.Error(w, "Failed to send email: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -84,7 +88,7 @@ func SendEmailHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Функция для отправки письма
-func sendEmail(to string, body string) error {
+func SendEmail(to string, body string) error {
 	// Настройки SMTP
 	smtpHost := "smtp.gmail.com"
 	smtpPort := "587"
@@ -181,4 +185,27 @@ func sendEmailWithAttachment(to string, body string, attachmentPath string) erro
 
 	log.Println("Email sent successfully to:", to)
 	return nil
+}
+
+func VerifyEmailHandler(w http.ResponseWriter, r *http.Request) {
+	token := strings.TrimPrefix(r.URL.Path, "/verify-email/")
+
+	// Декодируем токен и извлекаем email
+	email, err := utils.DecodeToken(token)
+	if err != nil {
+		http.Error(w, "Invalid or expired token", http.StatusBadRequest)
+		return
+	}
+
+	// Обновляем статус пользователя в базе
+	_, err = db.Collection("users").UpdateOne(context.TODO(), bson.M{"email": email}, bson.M{
+		"$set": bson.M{"is_verified": true},
+	})
+	if err != nil {
+		http.Error(w, "Error verifying email", http.StatusInternalServerError)
+		return
+	}
+
+	// Успешное подтверждение
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
