@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"pastebin/middleware"
 	"pastebin/server"
+	"pastebin/utils"
 	"syscall"
 	"time"
 
@@ -21,6 +22,8 @@ func setupRoutes() *mux.Router {
 	r.Use(middleware.RateLimiterMiddleware)
 
 	// Определите маршруты
+
+	// r.Handle("/", middleware.AuthMiddleware(http.HandlerFunc(server.MainPageHandler))).Methods("GET")
 	r.HandleFunc("/", server.MainPageHandler).Methods("GET")
 	r.HandleFunc("/create-paste", server.CreatePasteHandler).Methods("POST")
 	r.HandleFunc("/paste/{id}", server.ViewPasteHandler).Methods("GET")
@@ -30,11 +33,10 @@ func setupRoutes() *mux.Router {
 
 	r.HandleFunc("/signup", server.SignupHandler).Methods("GET", "POST")
 	r.HandleFunc("/login", server.LoginHandler).Methods("GET", "POST")
-	r.HandleFunc("/users", server.UsersHandler).Methods("GET")
-	r.HandleFunc("/delete-user/{id}", server.DeleteUserHandler).Methods("POST")
-	r.HandleFunc("/account", server.AccountHandler).Methods("GET")
-	r.HandleFunc("/account/{user-id}/change-password", server.ChangePasswordHandler).Methods("POST")
-	r.HandleFunc("/account/delete", server.DeleteAccountHandler).Methods("POST")
+	r.HandleFunc("/profile", server.ProfileHandler)
+
+	r.HandleFunc("/oauth/google", utils.GoogleLoginHandler)
+	r.HandleFunc("/oauth/callback", utils.GoogleCallbackHandler)
 
 	r.HandleFunc("/send-email", server.SendEmailHandler).Methods("POST")
 	r.HandleFunc("/verify-email/{token}", server.VerifyEmailHandler).Methods("GET")

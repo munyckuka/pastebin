@@ -3,9 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/gorilla/mux"
+	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	"net/http"
@@ -16,6 +15,8 @@ import (
 
 // Путь к шаблонам
 const templatesDir = "web"
+
+var jwtSecret = []byte("cAtwa1kkEy")
 
 func SignupHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
@@ -76,199 +77,85 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// renderSignupPage отображает страницу регистрации с сообщением об ошибке
-func renderSignupPage(w http.ResponseWriter, errorMessage, login, email string) {
-	tmpl, err := template.ParseFiles("web/signup.html")
-	if err != nil {
-		http.Error(w, "Failed to load signup page", http.StatusInternalServerError)
-		return
-	}
-
-	// Передаем сообщение об ошибке и текущие данные в шаблон
-	data := map[string]interface{}{
-		"ErrorMessage": errorMessage,
-		"Login":        login,
-		"Email":        email,
-	}
-	tmpl.Execute(w, data)
-}
-
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
+		// Получаем данные из формы
 		email := r.FormValue("email")
 		password := r.FormValue("password")
 
-		// Проверка пользователя
-		var user models.User
+		// Проверяем пользователя в базе данных
+		var user struct {
+			Email        string `bson:"email"`
+			PasswordHash string `bson:"password_hash"`
+		}
 		err := db.Collection("users").FindOne(context.TODO(), bson.M{"email": email}).Decode(&user)
 		if err != nil {
+			http.Error(w, "User not found", http.StatusUnauthorized)
+			return
+		}
+
+		// Проверяем пароль
+		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
 			return
 		}
 
-		// Сравнение пароля
-		err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-		if err != nil {
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-			return
-		}
+		// Генерация токена
+		token := utils.GenerateToken(email)
+		// Установка токена в cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "token",
+			Value:    token,
+			Expires:  time.Now().Add(24 * time.Hour),
+			HttpOnly: true,
+			Path:     "/",
+		})
 
-		// Проверка, подтвержден ли email
-		if !user.IsVerified {
-			http.Error(w, "Email not verified", http.StatusForbidden)
-			return
-		}
+		http.Redirect(w, r, "/profile", http.StatusSeeOther)
 
-		// Успешная авторизация (создание сессии или JWT)
-		fmt.Fprintf(w, "Login successful!")
 	} else {
-		// Отображаем форму входа
+		// Если метод GET, отображаем форму логина
 		tmpl := template.Must(template.ParseFiles("web/login.html"))
 		tmpl.Execute(w, nil)
 	}
 }
-func UsersHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	collection := GetCollection("users")
-	cursor, err := collection.Find(ctx, bson.M{})
+
+func ProfileHandler(w http.ResponseWriter, r *http.Request) {
+	// Извлекаем токен из cookie
+	cookie, err := r.Cookie("token")
 	if err != nil {
-		http.Error(w, "Error fetching users", http.StatusInternalServerError)
+		http.Error(w, "Unauthorized: Token not found", http.StatusUnauthorized)
 		return
 	}
 
-	var users []models.User
-	if err := cursor.All(ctx, &users); err != nil {
-		http.Error(w, "Error decoding users", http.StatusInternalServerError)
-		return
-	}
-
-	tmpl, _ := template.ParseFiles("web/users.html")
-	tmpl.Execute(w, users)
-}
-func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	id := r.URL.Path[len("/delete-user/"):]
-	objID, _ := primitive.ObjectIDFromHex(id)
-
-	collection := GetCollection("users")
-	_, err := collection.DeleteOne(ctx, bson.M{"_id": objID})
+	// Декодируем токен
+	tokenString := cookie.Value
+	claims := &jwt.MapClaims{}
+	_, err = jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
 	if err != nil {
-		http.Error(w, "Error deleting user", http.StatusInternalServerError)
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}
 
-	http.Redirect(w, r, "/users", http.StatusSeeOther)
-}
-func AccountHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	// Получаем email из токена
+	email, ok := (*claims)["email"].(string)
+	if !ok {
+		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		return
+	}
 
-	// Заглушка для проверки текущего пользователя
-	// В реальной реализации используйте сессию или токен для идентификации пользователя
-	email := "example@example.com" // Временно, заменить на реальный email из сессии
-
-	collection := GetCollection("users")
-	var user models.User
-	err := collection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+	// Ищем пользователя в базе данных
+	var user struct {
+		Email string `bson:"email"`
+	}
+	err = db.Collection("users").FindOne(context.TODO(), bson.M{"email": email}).Decode(&user)
 	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
-	if r.Method == http.MethodGet {
-		// Загрузка страницы аккаунта
-		tmpl, err := template.ParseFiles("web/account.html")
-		if err != nil {
-			http.Error(w, "Failed to load account page", http.StatusInternalServerError)
-			return
-		}
-		tmpl.Execute(w, user)
-		return
-	}
-
-	if r.Method == http.MethodPost {
-		// Обновление данных пользователя
-		newPassword := r.FormValue("password")
-
-		if newPassword != "" {
-			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
-			if err != nil {
-				http.Error(w, "Failed to hash password", http.StatusInternalServerError)
-				return
-			}
-			_, err = collection.UpdateOne(ctx, bson.M{"email": email}, bson.M{"$set": bson.M{"password": string(hashedPassword)}})
-			if err != nil {
-				http.Error(w, "Failed to update password", http.StatusInternalServerError)
-				return
-			}
-		}
-
-		http.Redirect(w, r, "/account", http.StatusSeeOther)
-		return
-	}
-}
-
-func ChangePasswordHandler(w http.ResponseWriter, r *http.Request) {
-	// Извлекаем user-id из URL
-	vars := mux.Vars(r)
-	userID := vars["user-id"]
-
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Заглушка для проверки пользователя
-	// На реальном проекте здесь будет извлечение логина или ID из сессии
-	// Например, userID может быть получен из сессии или токена
-	// login := getLoginFromSession(r)  // Тестовый логин
-
-	// Получаем новый пароль из формы
-	newPassword := r.FormValue("new-password")
-	if len(newPassword) < 8 {
-		http.Error(w, "Password must be at least 8 characters long", http.StatusBadRequest)
-		return
-	}
-
-	// Хэшируем новый пароль
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
-	if err != nil {
-		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
-		return
-	}
-
-	// Подключаемся к базе данных
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	collection := GetCollection("users")
-	// Обновляем пароль пользователя, чей ID совпадает с user-id
-	_, err = collection.UpdateOne(ctx, bson.M{"_id": userID}, bson.M{"$set": bson.M{"password": string(hashedPassword)}})
-	if err != nil {
-		http.Error(w, "Failed to update password", http.StatusInternalServerError)
-		return
-	}
-
-	// Перенаправляем на страницу аккаунта
-	http.Redirect(w, r, "/account/"+userID, http.StatusSeeOther)
-}
-
-func DeleteAccountHandler(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Временно: используйте сессию или токен для идентификации пользователя
-	email := "example@example.com"
-
-	collection := GetCollection("users")
-	_, err := collection.DeleteOne(ctx, bson.M{"email": email})
-	if err != nil {
-		http.Error(w, "Failed to delete account", http.StatusInternalServerError)
-		return
-	}
-
-	// Редирект на главную страницу после удаления
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	// Отображаем профиль пользователя
+	fmt.Fprintf(w, "Welcome to your profile, %s!", user.Email)
 }
