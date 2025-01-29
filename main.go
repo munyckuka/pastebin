@@ -35,6 +35,7 @@ func setupRoutes() *mux.Router {
 	r.HandleFunc("/signup", server.SignupHandler).Methods("GET", "POST")
 	r.HandleFunc("/login", server.LoginHandler).Methods("GET", "POST")
 	r.HandleFunc("/profile", server.ProfileHandler)
+	r.HandleFunc("/logout", server.LogoutHandler).Methods("POST")
 
 	r.HandleFunc("/oauth/google", utils.GoogleLoginHandler)
 	r.HandleFunc("/oauth/callback", utils.GoogleCallbackHandler)

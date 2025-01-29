@@ -200,3 +200,16 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		Pastes: pastes,
 	})
 }
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	// Удаляем куку с токеном
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Unix(0, 0), // Устанавливаем истёкшую дату
+		HttpOnly: true,
+	})
+
+	// Отправляем успешный ответ
+	w.WriteHeader(http.StatusOK)
+}
