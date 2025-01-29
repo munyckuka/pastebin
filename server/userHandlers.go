@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"html/template"
 	"net/http"
@@ -24,13 +25,12 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 		password := r.FormValue("password")
 		confirmPassword := r.FormValue("confirm_password")
 
-		// Проверка на совпадение паролей
 		if password != confirmPassword {
 			http.Error(w, "Passwords do not match", http.StatusBadRequest)
 			return
 		}
 
-		// Проверка на наличие пользователя с таким email
+		// Проверка, существует ли пользователь
 		var existingUser models.User
 		err := db.Collection("users").FindOne(context.TODO(), bson.M{"email": email}).Decode(&existingUser)
 		if err == nil {
@@ -49,29 +49,31 @@ func SignupHandler(w http.ResponseWriter, r *http.Request) {
 		user := models.User{
 			Email:        email,
 			PasswordHash: passwordHash,
-			IsVerified:   false, // Не подтверждено
+			IsVerified:   false,
 		}
 
-		// Сохранение пользователя в базу данных
-		_, err = db.Collection("users").InsertOne(context.TODO(), user)
+		// Вставка пользователя в базу данных
+		result, err := db.Collection("users").InsertOne(context.TODO(), user)
 		if err != nil {
 			http.Error(w, "Error saving user", http.StatusInternalServerError)
 			return
 		}
 
-		// Генерация токена для подтверждения email
-		token := utils.GenerateToken(email)
-		// Отправка письма с ссылкой для подтверждения email
+		// Получаем `userID` из результата вставки
+		userID := result.InsertedID.(primitive.ObjectID)
+
+		// Генерация токена с `userID`
+		token := utils.GenerateToken(userID, email)
+
+		// Отправляем email для подтверждения
 		err = utils.SendVerificationEmail(email, token)
 		if err != nil {
 			http.Error(w, "Failed to send verification email", http.StatusInternalServerError)
 			return
 		}
 
-		// Ответ пользователю
 		fmt.Fprintf(w, "Registration successful. Please verify your email.")
 	} else {
-		// Отображаем форму регистрации
 		tmpl := template.Must(template.ParseFiles("web/signup.html"))
 		tmpl.Execute(w, nil)
 	}
@@ -85,8 +87,9 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Проверяем пользователя в базе данных
 		var user struct {
-			Email        string `bson:"email"`
-			PasswordHash string `bson:"password_hash"`
+			ID           primitive.ObjectID `bson:"_id"`
+			Email        string             `bson:"email"`
+			PasswordHash string             `bson:"password_hash"`
 		}
 		err := db.Collection("users").FindOne(context.TODO(), bson.M{"email": email}).Decode(&user)
 		if err != nil {
@@ -101,13 +104,15 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Генерация токена
-		token := utils.GenerateToken(email)
+		token := utils.GenerateToken(user.ID, email)
 		// Установка токена в cookie
 		http.SetCookie(w, &http.Cookie{
 			Name:     "token",
 			Value:    token,
 			Expires:  time.Now().Add(24 * time.Hour),
 			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
 			Path:     "/",
 		})
 
@@ -121,7 +126,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ProfileHandler(w http.ResponseWriter, r *http.Request) {
-	// Извлекаем токен из cookie
+	// Получаем токен из куки
 	cookie, err := r.Cookie("token")
 	if err != nil {
 		http.Error(w, "Unauthorized: Token not found", http.StatusUnauthorized)
@@ -131,31 +136,67 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	// Декодируем токен
 	tokenString := cookie.Value
 	claims := &jwt.MapClaims{}
-	_, err = jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})
-	if err != nil {
+
+	if err != nil || !token.Valid {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}
 
-	// Получаем email из токена
-	email, ok := (*claims)["email"].(string)
+	// Получаем userID из токена
+	userIDHex, ok := (*claims)["user_id"].(string)
 	if !ok {
 		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
 		return
 	}
 
-	// Ищем пользователя в базе данных
+	// Преобразуем строку userID в ObjectID для MongoDB
+	userID, err := primitive.ObjectIDFromHex(userIDHex)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusUnauthorized)
+		return
+	}
+
+	// Ищем пользователя по `_id`
 	var user struct {
+		Name  string `bson:"name"`
 		Email string `bson:"email"`
 	}
-	err = db.Collection("users").FindOne(context.TODO(), bson.M{"email": email}).Decode(&user)
+	err = db.Collection("users").FindOne(context.TODO(), bson.M{"_id": userID}).Decode(&user)
 	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
 
-	// Отображаем профиль пользователя
-	fmt.Fprintf(w, "Welcome to your profile, %s!", user.Email)
+	// Получаем все paste-записи пользователя
+	var pastes []models.Paste
+	cursor, err := db.Collection("pastes").Find(context.TODO(), bson.M{"user_id": userID})
+	if err != nil {
+		http.Error(w, "Failed to fetch pastes", http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(context.TODO())
+
+	for cursor.Next(context.TODO()) {
+		var paste models.Paste
+		if err := cursor.Decode(&paste); err != nil {
+			http.Error(w, "Error decoding paste", http.StatusInternalServerError)
+			return
+		}
+		pastes = append(pastes, paste)
+	}
+
+	// Загружаем HTML-шаблон
+	tmpl := template.Must(template.ParseFiles("web/profile.html"))
+	tmpl.Execute(w, struct {
+		Name   string         `json:"name"`
+		Email  string         `json:"email"`
+		Pastes []models.Paste `json:"pastes"`
+	}{
+		Name:   user.Name,
+		Email:  user.Email,
+		Pastes: pastes,
+	})
 }

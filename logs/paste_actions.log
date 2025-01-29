@@ -39,3 +39,9 @@
 2025/01/22 12:09:10 pasteHandlers.go:41: StatusCode: 400 | Message: Content is required
 2025/01/22 12:09:10 pasteHandlers.go:41: StatusCode: 400 | Message: Content is required
 2025/01/22 12:09:10 pasteHandlers.go:41: StatusCode: 400 | Message: Content is required
+2025/01/29 23:00:53 pasteHandlers.go:43: StatusCode: 400 | Message: Content is required
+2025/01/29 23:00:53 pasteHandlers.go:110: Created paste: ID=679a6cd55d7d818df84cb7ba, Title=, Date=2025-01-29T23:00:53+05:00
+2025/01/29 23:00:54 pasteHandlers.go:41: Error: the provided hex string is not a valid ObjectID | StatusCode: 500 | Message: Invalid ID format
+2025/01/29 23:04:23 pasteHandlers.go:43: StatusCode: 400 | Message: Content is required
+2025/01/29 23:04:23 pasteHandlers.go:110: Created paste: ID=679a6da7025355d6f1df0874, Title=, Date=2025-01-29T23:04:23+05:00
+2025/01/29 23:04:24 pasteHandlers.go:41: Error: the provided hex string is not a valid ObjectID | StatusCode: 500 | Message: Invalid ID format

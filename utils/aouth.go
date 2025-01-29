@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -24,11 +25,11 @@ func HashPassword(password string) (string, error) {
 }
 
 // Функция для генерации токена
-func GenerateToken(email string) string {
-	// Используем JWT для создания токена
+func GenerateToken(userID primitive.ObjectID, email string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email": email,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(),
+		"user_id": userID.Hex(), // записываем user_id в строковом формате
+		"email":   email,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
 	})
 	tokenString, _ := token.SignedString(jwtSecret)
 	return tokenString
@@ -108,6 +109,36 @@ func ValidateToken(tokenString string) (string, error) {
 	}
 
 	return email, nil
+}
+
+func GetUserIDFromToken(r *http.Request) (primitive.ObjectID, error) {
+	cookie, err := r.Cookie("token")
+	if err != nil {
+		return primitive.NilObjectID, fmt.Errorf("token not found")
+	}
+
+	tokenString := cookie.Value
+	claims := &jwt.MapClaims{}
+	_, err = jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+	if err != nil {
+		return primitive.NilObjectID, fmt.Errorf("invalid token")
+	}
+
+	// Получаем user_id из токена
+	userIDStr, ok := (*claims)["user_id"].(string)
+	if !ok {
+		return primitive.NilObjectID, fmt.Errorf("invalid token claims")
+	}
+
+	// Конвертируем строковый user_id в ObjectID
+	userID, err := primitive.ObjectIDFromHex(userIDStr)
+	if err != nil {
+		return primitive.NilObjectID, fmt.Errorf("invalid user ID format")
+	}
+
+	return userID, nil
 }
 
 var (

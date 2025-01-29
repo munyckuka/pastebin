@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"github.com/dgrijalva/jwt-go"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"os"
+	"pastebin/utils"
 	"strconv"
 
 	"fmt"
@@ -57,15 +59,20 @@ func CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
+	userID, err := utils.GetUserIDFromToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	// Установка таймаута для контекста
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	// Парсинг данных формы
-	err := r.ParseForm()
-	if err != nil {
-		HandleError(w, err, http.StatusBadRequest, "Failed to parse form data")
+	err1 := r.ParseForm()
+	if err1 != nil {
+		HandleError(w, err1, http.StatusBadRequest, "Failed to parse form data")
 		return
 	}
 
@@ -87,6 +94,7 @@ func CreatePasteHandler(w http.ResponseWriter, r *http.Request) {
 		Title:     title,
 		Content:   content,
 		CreatedAt: time.Now(),
+		UserID:    userID,
 	}
 
 	// Сохранение пасты в базе данных
@@ -227,7 +235,7 @@ func AllPastesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
+func DeletePasteHandlerAdmin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -274,8 +282,35 @@ func DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
 	// Редирект на список паст
 	http.Redirect(w, r, "/all-pastes", http.StatusSeeOther)
 }
+func DeletePasteHandler(w http.ResponseWriter, r *http.Request) {
+	userID, err := utils.GetUserIDFromToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-func EditPasteHandler(w http.ResponseWriter, r *http.Request) {
+	pasteID, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		http.Error(w, "Invalid paste ID", http.StatusBadRequest)
+		return
+	}
+
+	filter := bson.M{"_id": pasteID, "user_id": userID}
+	result, err := db.Collection("pastes").DeleteOne(context.TODO(), filter)
+	if err != nil || result.DeletedCount == 0 {
+		http.Error(w, "Paste not found or unauthorized", http.StatusForbidden)
+		return
+	}
+	// Логирование удаления
+	if pasteLogger != nil {
+		pasteLogger.Printf("Deleted paste: ID=%s, Date=%s\n", pasteID, time.Now().Format(time.RFC3339))
+	} else {
+		log.Printf("Логгер не инициализирован: удалена паста с ID=%s", pasteID)
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func EditPasteHandlerAdmin(w http.ResponseWriter, r *http.Request) {
 	// Получение ID из URL
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -342,5 +377,88 @@ func EditPasteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Метод не поддерживается
+	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+}
+func EditPasteHandler(w http.ResponseWriter, r *http.Request) {
+	// Проверка токена
+	cookie, err := r.Cookie("token")
+	if err != nil {
+		http.Error(w, "Unauthorized: Token not found", http.StatusUnauthorized)
+		return
+	}
+
+	tokenString := cookie.Value
+	claims := &jwt.MapClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+
+	if err != nil || !token.Valid {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	// Получаем userID из токена
+	userIDHex, ok := (*claims)["user_id"].(string)
+	if !ok {
+		http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+		return
+	}
+
+	userID, err := primitive.ObjectIDFromHex(userIDHex)
+	if err != nil {
+		http.Error(w, "Invalid user ID", http.StatusUnauthorized)
+		return
+	}
+
+	// Получение ID пасты из URL
+	vars := mux.Vars(r)
+	pasteID := vars["id"]
+
+	objID, err := primitive.ObjectIDFromHex(pasteID)
+	if err != nil {
+		http.Error(w, "Invalid paste ID", http.StatusBadRequest)
+		return
+	}
+
+	collection := GetCollection("pastes")
+
+	// Проверяем, принадлежит ли паста пользователю
+	var paste models.Paste
+	err = collection.FindOne(r.Context(), bson.M{"_id": objID, "user_id": userID}).Decode(&paste)
+	if err == mongo.ErrNoDocuments {
+		http.Error(w, "Paste not found or access denied", http.StatusForbidden)
+		return
+	} else if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		// Отображаем форму редактирования
+		tmpl := template.Must(template.ParseFiles("web/editpaste.html"))
+		if err := tmpl.Execute(w, paste); err != nil {
+			http.Error(w, "Failed to render template", http.StatusInternalServerError)
+			return
+		}
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		r.ParseForm()
+		title := r.FormValue("title")
+		content := r.FormValue("content")
+
+		update := bson.M{"$set": bson.M{"title": title, "content": content}}
+		_, err := collection.UpdateOne(r.Context(), bson.M{"_id": objID, "user_id": userID}, update)
+		if err != nil {
+			http.Error(w, "Failed to update paste", http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, fmt.Sprintf("/paste/%s", pasteID), http.StatusSeeOther)
+		return
+	}
+
 	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
