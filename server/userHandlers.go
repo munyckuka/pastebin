@@ -129,7 +129,7 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	// Получаем токен из куки
 	cookie, err := r.Cookie("token")
 	if err != nil {
-		http.Error(w, "Unauthorized: Token not found", http.StatusUnauthorized)
+		http.Redirect(w, r, "/signup", http.StatusSeeOther)
 		return
 	}
 

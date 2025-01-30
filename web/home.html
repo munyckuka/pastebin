@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta Name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Paste</title>
     <style>
         body {
@@ -124,14 +124,14 @@
 </head>
 <body>
 <div class="header">
-    <h1>Pastebin</h1>
-    <button id="signup-btn" class="btn" onclick="window.location.href='/signup'">Sign up</button>
+    <button id="home-btn" class="btn" onclick="window.location.href='/'">PasteBin</button>
+    <button id="signup-btn" class="btn" onclick="window.location.href='/profile'">Profile</button>
 </div>
 <div class="container">
     <h1>New Paste</h1>
     <form action="/create-paste" method="POST">
 
-        <textarea name="content" required placeholder="Type here..."></textarea>
+        <textarea Name="content" required placeholder="Type here..."></textarea>
         <div class="settings">
             <label for="title">Title:</label>
             <input type="text" id="title" placeholder="Type here...">

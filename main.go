@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"pastebin/middleware"
 	"pastebin/server"
-	"pastebin/utils"
 	"syscall"
 	"time"
 
@@ -22,7 +22,6 @@ func setupRoutes() *mux.Router {
 	r.Use(middleware.RateLimiterMiddleware)
 
 	// Определите маршруты
-
 	// r.Handle("/", middleware.AuthMiddleware(http.HandlerFunc(server.MainPageHandler))).Methods("GET")
 	r.HandleFunc("/", server.MainPageHandler).Methods("GET")
 	r.HandleFunc("/create-paste", server.CreatePasteHandler).Methods("POST")
@@ -37,8 +36,8 @@ func setupRoutes() *mux.Router {
 	r.HandleFunc("/profile", server.ProfileHandler)
 	r.HandleFunc("/logout", server.LogoutHandler).Methods("POST")
 
-	r.HandleFunc("/oauth/google", utils.GoogleLoginHandler)
-	r.HandleFunc("/oauth/callback", utils.GoogleCallbackHandler)
+	r.HandleFunc("/oauth/google", server.GoogleLoginHandler)
+	r.HandleFunc("/oauth/google/callback", server.GoogleCallbackHandler)
 
 	r.HandleFunc("/send-email", server.SendEmailHandler).Methods("POST")
 	r.HandleFunc("/verify-email/{token}", server.VerifyEmailHandler).Methods("GET")
@@ -48,10 +47,15 @@ func setupRoutes() *mux.Router {
 }
 
 func main() {
-	// Подключаемся к базе данных
-	err := server.ConnectToDB()
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+		log.Fatal("Ошибка загрузки .env файла")
+	}
+	server.InitGoogleOAuth()
+	// Подключаемся к базе данных
+	err1 := server.ConnectToDB()
+	if err1 != nil {
+		log.Fatalf("Ошибка подключения к базе данных: %v", err1)
 	}
 
 	// Инициализация логгера

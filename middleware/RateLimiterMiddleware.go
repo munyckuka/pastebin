@@ -11,7 +11,7 @@ import (
 
 // лимит запросов: 5 запросов в секунду
 const requestsPerSecond = 5
-const burstLimit = 5
+const burstLimit = 10
 
 type client struct {
 	limiter  *rate.Limiter

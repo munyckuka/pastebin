@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta Name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Up</title>
   <link rel="stylesheet" href="signup.css">
   <style>
@@ -92,20 +92,21 @@
   <form action="/signup" method="POST" class="auth-form">
     <div class="form-group">
       <label for="email">Email:</label>
-      <input type="email" id="email" name="email" required placeholder="Enter your email">
+      <input type="email" id="email" Name="email" required placeholder="Enter your email">
     </div>
     <div class="form-group">
       <label for="username">Username:</label>
-      <input type="text" id="username" name="username" required placeholder="Enter your username">
+      <input type="text" id="username" Name="username" required placeholder="Enter your username">
     </div>
     <div class="form-group">
       <label for="password">Password:</label>
-      <input type="password" id="password" name="password" required placeholder="Enter your password">
+      <input type="password" id="password" Name="password" required placeholder="Enter your password">
     </div>
     <div class="form-group">
       <label for="confirm-password">Confirm Password:</label>
-      <input type="password" id="confirm-password" name="confirm_password" required placeholder="Confirm your password">
+      <input type="password" id="confirm-password" Name="confirm_password" required placeholder="Confirm your password">
     </div>
+    <a href="/oauth/google" class="btn btn-primary">Login with Google</a>
     <button type="submit" class="btn">Sign Up</button>
   </form>
   <p>Already have an account? <a href="/login">Log in</a></p>
