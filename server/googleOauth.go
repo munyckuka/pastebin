@@ -127,6 +127,7 @@ func CreateUser(ctx context.Context, email, name, provider string) (string, erro
 		Email:    email,
 		Name:     name,
 		Provider: provider,
+		Role:     "user",
 	}
 	res, err := db.Collection("users").InsertOne(ctx, user)
 	if err != nil {

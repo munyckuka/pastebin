@@ -9,4 +9,5 @@ type User struct {
 	PasswordHash string             `bson:"password_hash"`
 	IsVerified   bool               `bson:"is_verified"`
 	Provider     string             `bson:"provider,omitempty"` // Добавил поле для OAuth
+	Role         string             `bson:"role"`               // "user" или "admin"
 }

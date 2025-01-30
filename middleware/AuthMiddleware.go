@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"net/http"
+	"pastebin/server"
+	"pastebin/utils"
 	"strings"
 )
 
@@ -49,4 +51,31 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), "userEmail", email)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+func AdminMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Извлекаем токен из куки
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			http.Error(w, "Нет доступа", http.StatusForbidden)
+			return
+		}
+
+		// Декодируем токен
+		email, err := utils.DecodeToken(cookie.Value)
+		if err != nil {
+			http.Error(w, "Недействительный токен", http.StatusUnauthorized)
+			return
+		}
+
+		// Проверяем роль пользователя
+		user, err := server.FindUserByEmail(r.Context(), email)
+		if err != nil || user.Role != "admin" {
+			http.Error(w, "Доступ запрещен", http.StatusForbidden)
+			return
+		}
+
+		// Передаем управление следующему обработчику
+		next(w, r)
+	}
 }

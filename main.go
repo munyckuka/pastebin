@@ -26,7 +26,7 @@ func setupRoutes() *mux.Router {
 	r.HandleFunc("/", server.MainPageHandler).Methods("GET")
 	r.HandleFunc("/create-paste", server.CreatePasteHandler).Methods("POST")
 	r.HandleFunc("/paste/{id}", server.ViewPasteHandler).Methods("GET")
-	r.HandleFunc("/all-pastes", server.AllPastesHandler).Methods("GET")
+	r.HandleFunc("/admin", middleware.AdminMiddleware(server.AllPastesHandler)).Methods("GET")
 
 	r.HandleFunc("/pastes/{id}/delete", server.DeletePasteHandler).Methods("POST")
 	r.HandleFunc("/pastes/{id}/edit", server.EditPasteHandler).Methods("GET", "POST")
@@ -42,7 +42,6 @@ func setupRoutes() *mux.Router {
 	r.HandleFunc("/send-email", server.SendEmailHandler).Methods("POST")
 	r.HandleFunc("/verify-email/{token}", server.VerifyEmailHandler).Methods("GET")
 
-	r.HandleFunc("/admin", server.AdminPageHandler).Methods("GET")
 	return r
 }
 
