@@ -22,7 +22,6 @@ func setupRoutes() *mux.Router {
 	r.Use(middleware.RateLimiterMiddleware)
 
 	// Определите маршруты
-	// r.Handle("/", middleware.AuthMiddleware(http.HandlerFunc(server.MainPageHandler))).Methods("GET")
 	r.HandleFunc("/", server.MainPageHandler).Methods("GET")
 	r.HandleFunc("/create-paste", server.CreatePasteHandler).Methods("POST")
 	r.HandleFunc("/paste/{id}", server.ViewPasteHandler).Methods("GET")

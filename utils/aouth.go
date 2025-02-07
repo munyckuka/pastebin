@@ -135,3 +135,13 @@ func GetUserIDFromToken(r *http.Request) (primitive.ObjectID, error) {
 
 	return userID, nil
 }
+func GenerateTestToken(email, role string) string {
+	claims := jwt.MapClaims{
+		"email": email,
+		"role":  role,
+		"exp":   time.Now().Add(time.Hour).Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, _ := token.SignedString(jwtSecret)
+	return signedToken
+}

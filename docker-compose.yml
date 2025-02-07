@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: pastebin_app
+    ports:
+      - "8080:8080"  # Порт вашего приложения
+    environment:
+      - MONGO_URI=mongodb+srv://kuka:1234@pastebin.2ojuf.mongodb.net/?retryWrites=true&w=majority&appName=PasteBin
+    restart: always
+    env_file:
+      - .env
