@@ -41,6 +41,8 @@ func setupRoutes() *mux.Router {
 	r.HandleFunc("/send-email", server.SendEmailHandler).Methods("POST")
 	r.HandleFunc("/verify-email/{token}", server.VerifyEmailHandler).Methods("GET")
 
+	r.HandleFunc("/donate", server.DonationHandler).Methods("GET")
+
 	return r
 }
 

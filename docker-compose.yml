@@ -11,3 +11,9 @@ services:
     restart: always
     env_file:
       - .env
+  donation_service:
+    build: ../microservice-donation
+    container_name: donation_service
+    ports:
+      - "8081:8081"
+    restart: always

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta Name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment</title>
+  <link rel="stylesheet" href="login.css">
+  <style>
+    /* Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #2d2d2d;
+      color: #333;
+    }
+
+    .signup-container {
+      background-color: #ffffff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 300px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: white;
+    }
+
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      text-align: left;
+      font-weight: bold;
+      color: #b3b3b3;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #666;
+    }
+
+    .btn {
+      background-color: #333;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      width: 100%;
+      cursor: pointer;
+      font-size: 16px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .btn:hover {
+      background-color: #555;
+    }
+    .container {
+      background-color: black;
+      padding: 20px;
+      border-radius: 20px;
+    }
+    p {
+      color: #b3b3b3;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h2>Donation</h2>
+  <form action="http://localhost:8081/donate" method="POST">
+    <div class="form-group">
+      <label for="card">Card number:</label>
+      <input type="text" id="card" name="card" required placeholder="Enter your card number">
+    </div>
+    <div class="form-group">
+      <label for="email">Send receipt to:</label>
+      <input type="email" id="email" name="email" required placeholder="Enter your email">
+    </div>
+    <div class="form-group">
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name" required placeholder="Enter your name">
+    </div>
+    <button type="submit" class="btn">Donate</button>
+  </form>
+  <p>Go back?! <a href="/profile">Go back (</a></p>
+</div>
+</body>
+</html>
