@@ -38,7 +38,15 @@
     <p><strong>Name:</strong> {{ .Name }}</p>
     <p><strong>Email:</strong> {{ .Email }}</p>
     <button class="btn btn-secondary" onclick="logout()">Logout</button>
-    <button class="btn btn-primary" >Donate 5$</button>
+    <a class="btn btn-primary" href="/donate">Donate 5$</a>
+    <h2 class="mt-4">My Chat</h2>
+    {{ if .ChatID }}
+    <a href="/chat/{{ .ChatID }}" class="btn btn-success">Go to Chat</a>
+    {{ else }}
+    <form action="/chat/create" method="POST">
+        <button type="submit" class="btn btn-primary">Start New Chat</button>
+    </form>
+    {{ end }}
     <h2 class="mt-4">My Pastes</h2>
     {{ if .Pastes }}
     {{ range .Pastes }}
@@ -71,6 +79,18 @@
             })
             .catch(err => console.error("Error:", err));
     }
+    const socket = new WebSocket(`ws://localhost:8080/ws?chat_id=${chatID}`);
+
+    socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        displayMessage(message.sender, message.content);
+    };
+
+    document.getElementById("sendBtn").addEventListener("click", () => {
+        const message = document.getElementById("messageInput").value;
+        socket.send(JSON.stringify({ chat_id: chatID, sender: "user", content: message }));
+    });
+
 </script>
 </body>
 </html>

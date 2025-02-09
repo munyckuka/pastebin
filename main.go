@@ -43,6 +43,12 @@ func setupRoutes() *mux.Router {
 
 	r.HandleFunc("/donate", server.DonationHandler).Methods("GET")
 
+	r.HandleFunc("/ws", server.ChatWebSocketHandler) // WebSocket обработчик
+	r.HandleFunc("/chat/create", server.CreateChatHandler).Methods("POST")
+	r.HandleFunc("/chat/{id}", server.ChatPageHandler).Methods("GET")
+	r.HandleFunc("/history", server.GetChatHistory).Methods("GET")
+	r.HandleFunc("/close_chat", server.CloseChatHandler).Methods("POST")
+
 	return r
 }
 

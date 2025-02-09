@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
@@ -29,7 +28,7 @@ func InitGoogleOAuth() {
 		log.Fatalf("Ошибка при создании OIDC провайдера: %v", err)
 	}
 
-	fmt.Println(os.Getenv("GOOGLE_CLIENT_ID"))
+	//fmt.Println(os.Getenv("GOOGLE_CLIENT_ID"))
 	oauthConfig = &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),

@@ -170,6 +170,16 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получаем активный чат пользователя, если есть
+	var chat struct {
+		ID primitive.ObjectID `bson:"_id"`
+	}
+	err = db.Collection("chats").FindOne(context.TODO(), bson.M{"user_id": userID, "status": "active"}).Decode(&chat)
+	chatID := ""
+	if err == nil {
+		chatID = chat.ID.Hex()
+	}
+
 	// Получаем все paste-записи пользователя
 	var pastes []models.Paste
 	cursor, err := db.Collection("pastes").Find(context.TODO(), bson.M{"user_id": userID})
@@ -194,10 +204,12 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		Name   string         `json:"name"`
 		Email  string         `json:"email"`
 		Pastes []models.Paste `json:"pastes"`
+		ChatID string         `json:"chat_id"`
 	}{
 		Name:   user.Name,
 		Email:  user.Email,
 		Pastes: pastes,
+		ChatID: chatID,
 	})
 }
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
