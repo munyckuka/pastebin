@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/http"
 	"pastebin/models"
+	"pastebin/utils"
 	"time"
 )
 
@@ -188,16 +189,38 @@ func ChatPageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Получаем userID из токена
+	userID, err := utils.GetUserIDFromToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Подключаемся к базе данных
+	var user struct {
+		Role string `bson:"role"`
+	}
+
+	// Проверяем роль пользователя
+	err = db.Collection("users").FindOne(context.TODO(), bson.M{"_id": userID}).Decode(&user)
+	if err != nil {
+		http.Error(w, "Ошибка получения пользователя", http.StatusInternalServerError)
+		return
+	}
+
 	tmpl, err := template.ParseFiles("web/chat.html")
 	if err != nil {
 		http.Error(w, "Ошибка загрузки шаблона", http.StatusInternalServerError)
 		return
 	}
 
+	// Передаём данные в шаблон
 	data := struct {
-		ChatID string
+		ChatID  string
+		IsAdmin bool
 	}{
-		ChatID: chatID,
+		ChatID:  chatID,
+		IsAdmin: user.Role == "admin", // Проверяем, является ли пользователь админом
 	}
 
 	err = tmpl.Execute(w, data)
@@ -205,6 +228,7 @@ func ChatPageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка рендеринга страницы", http.StatusInternalServerError)
 	}
 }
+
 func GetChatHistory(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -266,4 +290,33 @@ func GetChatHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(response.Messages)
+}
+func AllChatsHandler(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Получаем список всех чатов
+	collection := GetCollection("chats")
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		log.Printf("Ошибка получения чатов: %v\n", err)
+		http.Error(w, "Ошибка получения чатов", http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var chats []models.Chat
+	if err := cursor.All(ctx, &chats); err != nil {
+		log.Printf("Ошибка декодирования чатов: %v\n", err)
+		http.Error(w, "Ошибка декодирования чатов", http.StatusInternalServerError)
+		return
+	}
+
+	// Рендерим страницу
+	tmpl := template.Must(template.ParseFiles("web/allchats.html"))
+	err = tmpl.Execute(w, chats)
+	if err != nil {
+		log.Printf("Ошибка рендеринга: %v\n", err)
+		http.Error(w, "Ошибка рендеринга страницы", http.StatusInternalServerError)
+	}
 }

@@ -91,6 +91,7 @@
     const messageInput = document.getElementById("messageInput");
     const sendBtn = document.getElementById("sendBtn");
     const statusIndicator = document.getElementById("status");
+    const isAdmin = "{{ .IsAdmin }}" === "true"; // Определяем, админ ли это
 
     // Запрашиваем историю сообщений
     async function loadChatHistory() {
@@ -129,7 +130,7 @@
 
       const messageData = {
         chat_id: chatID,
-        sender: "user",
+        sender: isAdmin ? "admin" : "user", // Разделяем пользователей и админов
         content: content
       };
 

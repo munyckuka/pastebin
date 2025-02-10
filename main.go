@@ -48,6 +48,7 @@ func setupRoutes() *mux.Router {
 	r.HandleFunc("/chat/{id}", server.ChatPageHandler).Methods("GET")
 	r.HandleFunc("/history", server.GetChatHistory).Methods("GET")
 	r.HandleFunc("/close_chat", server.CloseChatHandler).Methods("POST")
+	r.HandleFunc("/admin/chats", middleware.AdminMiddleware(server.AllChatsHandler)).Methods("GET")
 
 	return r
 }

@@ -80,31 +80,6 @@ func DecodeToken(tokenString string) (string, error) {
 	}
 	return "", errors.New("invalid token")
 }
-func ValidateToken(tokenString string) (string, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Проверяем алгоритм подписи
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, jwt.NewValidationError("unexpected signing method", jwt.ValidationErrorSignatureInvalid)
-		}
-		return jwtSecret, nil
-	})
-
-	if err != nil || !token.Valid {
-		return "", err
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		return "", jwt.NewValidationError("invalid token claims", jwt.ValidationErrorClaimsInvalid)
-	}
-
-	email, ok := claims["email"].(string)
-	if !ok {
-		return "", jwt.NewValidationError("email not found in token claims", jwt.ValidationErrorClaimsInvalid)
-	}
-
-	return email, nil
-}
 
 func GetUserIDFromToken(r *http.Request) (primitive.ObjectID, error) {
 	cookie, err := r.Cookie("token")
@@ -134,14 +109,4 @@ func GetUserIDFromToken(r *http.Request) (primitive.ObjectID, error) {
 	}
 
 	return userID, nil
-}
-func GenerateTestToken(email, role string) string {
-	claims := jwt.MapClaims{
-		"email": email,
-		"role":  role,
-		"exp":   time.Now().Add(time.Hour).Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, _ := token.SignedString(jwtSecret)
-	return signedToken
 }
